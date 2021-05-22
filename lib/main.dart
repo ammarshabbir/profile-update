@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'userProfile.dart';
+import 'package:profile_upgrade/login_page.dart';
+import 'package:profile_upgrade/profile.dart';
+import 'package:profile_upgrade/signup_page.dart';
+
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,9 +17,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: UserProfile(),
+      home: LoginPage(),
       routes: {
-        '/userProfile':(BuildContext)=>UserProfile(),
+        '/signupPage':(BuildContext context)=>SignupPage(),
+        '/loginPage':(BuildContext)=>LoginPage(),
+        '/profilePage':(BuildContext context)=>ProfilePage(),
       },
     );
   }

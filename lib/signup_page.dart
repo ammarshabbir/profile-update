@@ -6,12 +6,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'dart:io';
 
-class UserProfile extends StatefulWidget {
+class SignupPage extends StatefulWidget {
   @override
-  _UserProfileState createState() => _UserProfileState();
+  _SignupPageState createState() => _SignupPageState();
 }
 
-class _UserProfileState extends State<UserProfile> {
+class _SignupPageState extends State<SignupPage> {
+
 
   File _image;
   final picker = ImagePicker();
@@ -23,6 +24,21 @@ class _UserProfileState extends State<UserProfile> {
   String phoneNumber;
   String email;
   String password;
+
+  final _auth = FirebaseAuth.instance;
+
+
+
+  Future<void>loginUser()async{
+    UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email, password: password);
+    if(userCredential != null){
+      print('User loged in');
+    }else{
+      print('user not logged in');
+    }
+  }
+
 
 
   Future getImage()async{
@@ -37,67 +53,24 @@ class _UserProfileState extends State<UserProfile> {
     });
   }
 
-  Future<void>uploadImage()async{
-    setState(() {
-      progress = true;
-    });
-    await firebase_storage.FirebaseStorage.instance.ref('profile/$phoneNumber').putFile(_image).then((value){
-      setState(() {
-        progress = false;
-      });
-      print('file uploaded');
-    } ).catchError((e){
-      print(e);
-    });
-  }
-
-  Future<void>downloadURL()async{
-    setState(() {
-      progress = true;
-    });
-    String downloadURL = await firebase_storage.FirebaseStorage.instance.ref('profile/$phoneNumber').getDownloadURL();
-    setState(() {
-      url = downloadURL;
-      progress = false;
-    });
-    url = downloadURL;
-    print(url);
-  }
 
   CollectionReference users = FirebaseFirestore.instance.collection('users');
-
-  Future<void>addUser(){
-    setState(() {
-      progress = true;
-    });
-    return users.doc(phoneNumber).set({
-      'imageUrl':url,
-      'name':name,
-      'phoneNumber':phoneNumber,
-      'email':email,
-    }).then((value) {
-      setState(() {
-        progress = false;
-      });
-      print('user added');
-    }).catchError((e){
-      print(e);
-    });
-  }
-
-
 
   Future<void>uploadProfile()async{
     setState(() {
       progress = true;
     });
-    await firebase_storage.FirebaseStorage.instance.ref('profile/$phoneNumber').putFile(_image).then((imageUpload)async{
-      String downloadURL = await firebase_storage.FirebaseStorage.instance.ref('profile/$phoneNumber').getDownloadURL();
-      setState(() {
-        url = downloadURL;
+
+    UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email, password: password).whenComplete(() async{
+      await firebase_storage.FirebaseStorage.instance.ref('profile/${_auth.currentUser.uid}').putFile(_image).then((imageUploade)async{
+        String downloadURL = await firebase_storage.FirebaseStorage.instance.ref('profile/${_auth.currentUser.uid}').getDownloadURL();
+        setState(() {
+          url = downloadURL;
+        });
       });
     }).whenComplete(() {
-      return users.doc(phoneNumber).set({
+      return users.doc(_auth.currentUser.uid).set({
         'imageUrl':url,
         'name':name,
         'phoneNumber':phoneNumber,
@@ -106,12 +79,12 @@ class _UserProfileState extends State<UserProfile> {
         setState(() {
           progress = false;
           print('user added');
+          Navigator.of(context).pushNamed('/profilePage');
         });
       });
     }).catchError((e){
       print(e);
     });
-
   }
 
 
@@ -120,7 +93,7 @@ class _UserProfileState extends State<UserProfile> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text('User Profile'),
+        title: Text('Signup Page'),
       ),
       body: ModalProgressHUD(
         inAsyncCall: progress,
@@ -138,14 +111,14 @@ class _UserProfileState extends State<UserProfile> {
                       radius: 80,
                       backgroundColor: Colors.grey,
                       child: Icon(
-                          Icons.camera_alt_rounded,
+                        Icons.camera_alt_rounded,
                         size: 70,
                       ),
                     ),
-                  ):Image.file(
-                      _image,
-                    height: 180,
-                    width: 150,
+                  ):CircleAvatar(
+                    radius: 80,
+                    backgroundColor: Colors.grey,
+                    backgroundImage: FileImage(_image),
                   ),
                 ),
                 Column(
@@ -186,6 +159,7 @@ class _UserProfileState extends State<UserProfile> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextField(
+                        obscureText: true,
                         onChanged: (value){
                           password = value;
                         },
@@ -194,25 +168,29 @@ class _UserProfileState extends State<UserProfile> {
                         ),
                       ),
                     ),
-                    RaisedButton(
-                      onPressed: (){
+                   GestureDetector(
+                     onTap: (){
+                       uploadProfile();
 
-                      uploadProfile();
-                      },
-                      child: Text('submit'),
-                    ),
-                    RaisedButton(
-                      onPressed: (){
-                        uploadImage();
-                      },
-                      child: Text('upload image'),
-                    ),
-                    RaisedButton(
-                      onPressed: (){
-                        downloadURL();
-                      },
-                      child: Text('download url'),
-                    ),
+                     },
+                     child: Container(
+                       padding: EdgeInsets.all(10),
+                       decoration: BoxDecoration(
+                         borderRadius: BorderRadius.circular(20),
+                         color: Colors.blue,
+                       ),
+                       child: Center(
+                         child: Text(
+                             'Sign up',
+                           style: TextStyle(
+                             color: Colors.white,
+                             fontSize: 18,
+                           ),
+                         ),
+                       ),
+                     ),
+                   ),
+
                   ],
                 ),
               ],
